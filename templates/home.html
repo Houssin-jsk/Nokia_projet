@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% block title %}Home | Nokia Failure Lab{% endblock %}
+{% block content %}
+{% set team_total = stats.team|length %}
+<section class="home-hero mb-5">
+    <div class="row align-items-center g-4">
+        <div class="col-lg-8">
+            <p class="hero-label">PIE internal mission</p>
+            <h1 class="hero-title">Nokia Failure Lab – PIE Edition</h1>
+            <p class="hero-subtitle">Unpack why Nokia lost the smartphone race through 7 characters, collaborate on resources, and build a stunning final PPT together.</p>
+            <div class="d-flex flex-wrap gap-3">
+                <a class="btn btn-primary btn-lg neon-btn" href="{{ url_for('dashboard') }}">Go to Dashboard</a>
+                <a class="btn btn-outline-light btn-lg neon-outline" href="{{ url_for('resources') }}">Open Resources</a>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card app-card glass-panel">
+                <div class="card-body">
+                    <p class="text-uppercase tracking">Current snapshot</p>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <span class="small text-muted">Team members</span>
+                            <h3 class="mb-0">{{ stats.team|length }}</h3>
+                        </div>
+                        <div>
+                            <span class="small text-muted">Logged in</span>
+                            <h3 class="mb-0">{{ logged_in_users }}</h3>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between small text-muted mb-1">
+                            <span>Characters assigned</span>
+                            <span>{{ stats.assigned_count }}/{{ stats.team|length }}</span>
+                        </div>
+                        <div class="progress progress-thin">
+                            <div class="progress-bar" style="width: {{ (stats.assigned_count / (team_total if team_total else 1)) * 100 }}%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="d-flex justify-content-between small text-muted mb-1">
+                            <span>Overall progress</span>
+                            <span>{{ stats.avg_progress_pct|round(1) }}%</span>
+                        </div>
+                        <div class="progress progress-thin">
+                            <div class="progress-bar bg-gradient" style="width: {{ stats.avg_progress_pct }}%"></div>
+                        </div>
+                    </div>
+                    {% if ppt_owner %}
+                    <div class="mt-3 small text-muted">PPT owner: <span class="text-white">{{ ppt_owner.full_name }}</span></div>
+                    {% else %}
+                    <div class="mt-3 small text-muted">No PPT owner declared yet.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="mb-5">
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card app-card info-card h-100">
+                <div class="card-body">
+                    <p class="info-label">01 · ROLE PLAY</p>
+                    <h4>Choose your character</h4>
+                    <p class="text-muted">Each teammate embodies a Nokia voice (CEO, PM, Engineer…). Dive into their angle and craft insights that make the story resonate.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card app-card info-card h-100">
+                <div class="card-body">
+                    <p class="info-label">02 · COLLAB</p>
+                    <h4>Collaborate & share</h4>
+                    <p class="text-muted">Notes, files, quick chat, and resource library keep everyone aligned, transparent, and fast.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card app-card info-card h-100">
+                <div class="card-body">
+                    <p class="info-label">03 · PPT OWNER</p>
+                    <h4>Prepare the final PPT</h4>
+                    <p class="text-muted">One PPT owner synthesizes everything in one slide deck, with direct access to all contributions.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="mb-5">
+    <div class="card app-card glass-panel ppt-owner-card">
+        <div class="card-body">
+            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
+                <div>
+                    <p class="info-label mb-1">PPT Owner</p>
+                    <h4 class="mb-2">Who owns the final slides?</h4>
+                    <p class="text-muted mb-0">Only one teammate can consolidate all insights into the master deck.</p>
+                </div>
+                <div class="text-end flex-grow-1">
+                    {% if not ppt_owner %}
+                        <p class="text-muted mb-2">No PPT owner yet. Step up and lead the storytelling.</p>
+                        <form method="post" action="{{ url_for('claim_ppt') }}">
+                            <button class="btn btn-outline-light neon-outline" type="submit">I will prepare the PPT</button>
+                        </form>
+                    {% elif ppt_owner.id == current_user.id %}
+                        <div class="badge bg-success-subtle text-success mb-2">You are the PPT owner 🔥</div>
+                        <a class="btn btn-primary neon-btn" href="{{ url_for('ppt_resources') }}">Access all team resources</a>
+                    {% else %}
+                        <p class="text-muted mb-0">PPT will be prepared by <strong>{{ ppt_owner.full_name }}</strong>. Funnel your assets to them.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<section>
+    <div class="card app-card glass-panel">
+        <div class="card-body">
+            <div class="row g-4 align-items-center">
+                <div class="col-lg-9">
+                    <h4 class="mb-2">Team momentum</h4>
+                    <p class="text-muted mb-3">Keep the Nokia fall narrative tight: review the dashboard for assignments, update your progress, drop new ideas in chat.</p>
+                    <div class="d-flex flex-wrap gap-3">
+                        <a class="btn btn-primary neon-btn" href="{{ url_for('dashboard') }}">Check dashboard</a>
+                        <a class="btn btn-outline-light neon-outline" href="{{ url_for('chat') }}">Ping the team</a>
+                    </div>
+                </div>
+                <div class="col-lg-3">
+                    <div class="mini-progress text-center">
+                        <span class="mini-label">Overall completion</span>
+                        <div class="mini-value">{{ stats.avg_progress_pct|round(0) }}%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

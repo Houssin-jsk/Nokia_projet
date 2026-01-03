@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block title %}Unauthorized | Nokia Failure Lab{% endblock %}
+{% block content %}
+<div class="text-center py-5">
+    <h2>🚫 Access restricted</h2>
+    <p>You do not have the rights to visit this area.</p>
+    <a class="btn btn-outline-primary" href="{{ url_for('dashboard') if current_user else url_for('login') }}">Return</a>
+</div>
+{% endblock %}

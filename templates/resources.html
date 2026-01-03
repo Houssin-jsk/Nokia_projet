@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+{% block title %}Resources | Nokia Failure Lab{% endblock %}
+{% block content %}
+<div class="card p-4 mb-5">
+    <ul class="nav nav-pills resource-tabs" id="resourceTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="my-tab" data-bs-toggle="pill" data-bs-target="#my" type="button" role="tab">My Resources</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="team-tab" data-bs-toggle="pill" data-bs-target="#team" type="button" role="tab">Team Library</button>
+        </li>
+    </ul>
+    <div class="tab-content pt-4" id="resourceTabsContent">
+        <div class="tab-pane fade show active" id="my" role="tabpanel" aria-labelledby="my-tab">
+            <div class="row g-4 mb-4">
+                <div class="col-12 col-lg-4">
+                    <div class="card h-100 p-3">
+                        <h5 class="mb-3">New Note</h5>
+                        <form method="post">
+                            {{ note_form.hidden_tag() }}
+                            <div class="mb-3">
+                                {{ note_form.title.label(class_='form-label') }}
+                                {{ note_form.title(class_='form-control', placeholder='Title of your note') }}
+                            </div>
+                            <div class="mb-3">
+                                {{ note_form.content.label(class_='form-label') }}
+                                {{ note_form.content(class_='form-control', placeholder='Key ideas, stats, quotes…', rows=4) }}
+                            </div>
+                            {{ note_form.submit_note(class_='btn btn-primary w-100') }}
+                        </form>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-4">
+                    <div class="card h-100 p-3">
+                        <h5 class="mb-3">Upload File</h5>
+                        <form method="post" enctype="multipart/form-data">
+                            {{ file_form.hidden_tag() }}
+                            <div class="mb-3">
+                                {{ file_form.file.label(class_='form-label') }}
+                                {{ file_form.file(class_='form-control') }}
+                                <div class="form-text">pdf, docx, pptx, xlsx, txt</div>
+                            </div>
+                            <div class="mb-3">
+                                {{ file_form.description.label(class_='form-label') }}
+                                {{ file_form.description(class_='form-control', placeholder='Short context (optional)') }}
+                            </div>
+                            {{ file_form.submit_file(class_='btn btn-success w-100') }}
+                        </form>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-4">
+                    <div class="card h-100 p-3">
+                        <h5 class="mb-3">Save Link</h5>
+                        <form method="post">
+                            {{ link_form.hidden_tag() }}
+                            <div class="mb-3">
+                                {{ link_form.url.label(class_='form-label') }}
+                                {{ link_form.url(class_='form-control', placeholder='https://...') }}
+                            </div>
+                            <div class="mb-3">
+                                {{ link_form.description.label(class_='form-label') }}
+                                {{ link_form.description(class_='form-control', placeholder='Why is this link useful?') }}
+                            </div>
+                            {{ link_form.submit_link(class_='btn btn-info text-white w-100') }}
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <h5 class="mb-3">My saved material</h5>
+            {% if my_notes or my_files %}
+            <div class="row row-cols-1 row-cols-md-2 g-4">
+                {% for note in my_notes %}
+                <div class="col">
+                    <div class="card resource-card h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="mb-0">{{ note.title }}</h6>
+                                <span class="badge bg-primary-subtle text-primary">NOTE</span>
+                            </div>
+                            <p class="resource-text">{{ note.content }}</p>
+                        </div>
+                        <div class="card-footer text-muted small">Updated {{ note.updated_at.strftime('%Y-%m-%d %H:%M') }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+                {% for res in my_files %}
+                <div class="col">
+                    <div class="card resource-card h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="mb-0">{{ res.description or res.original_filename or res.url }}</h6>
+                                <span class="badge bg-success-subtle text-success">{{ res.file_type.upper() }}</span>
+                            </div>
+                            {% if res.file_type == 'link' %}
+                                <p class="text-muted small mb-3">External resource</p>
+                                <a class="btn btn-outline-primary btn-sm" href="{{ res.url }}" target="_blank">Open link</a>
+                            {% else %}
+                                <p class="text-muted small mb-3">Uploaded file</p>
+                                <a class="btn btn-outline-primary btn-sm" href="{{ url_for('uploaded_file', filename=res.filename) }}" target="_blank">Download</a>
+                            {% endif %}
+                        </div>
+                        <div class="card-footer text-muted small">Saved {{ res.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+                <p class="text-muted">No resources saved yet. Start with a note or upload.</p>
+            {% endif %}
+        </div>
+        <div class="tab-pane fade" id="team" role="tabpanel" aria-labelledby="team-tab">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Owner</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                            <th>Date</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for res in all_resources %}
+                        <tr>
+                            <td><span class="badge owner-badge">{{ res.user.full_name }}</span></td>
+                            <td><span class="badge bg-light text-dark">{{ res.file_type.upper() }}</span></td>
+                            <td>{{ res.description or res.original_filename or res.url }}</td>
+                            <td>{{ res.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                {% if res.file_type == 'link' %}
+                                    <a class="btn btn-sm btn-outline-primary" href="{{ res.url }}" target="_blank">Open</a>
+                                {% else %}
+                                    <a class="btn btn-sm btn-outline-primary" href="{{ url_for('uploaded_file', filename=res.filename) }}" target="_blank">Download</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="5" class="text-muted text-center">No team resources yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% block title %}Team Chat | Nokia Failure Lab{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-7">
+        <div class="app-card glass-panel chat-card">
+            <div class="chat-header">Team Chat</div>
+            <div class="chat-messages" id="chatHistory">
+                {% for message in messages %}
+                {% set mine = current_user and message.user_id == current_user.id %}
+                <div class="chat-message-row {% if mine %}me{% else %}other{% endif %}">
+                    <div class="chat-bubble-container">
+                        <div class="chat-meta">
+                            <span class="chat-sender">{{ message.user.full_name }}</span>
+                            <span class="chat-time">{{ message.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                        </div>
+                        <div class="chat-bubble {% if mine %}me{% else %}other{% endif %}">
+                            {% if message.content in stickers %}
+                                <div class="sticker-bubble">
+                                    <img src="{{ url_for('static', filename='stickers/' ~ stickers[message.content]) }}" alt="{{ message.content }}">
+                                </div>
+                            {% else %}
+                                <div class="chat-text">{{ message.content }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-muted">No messages yet.</p>
+                {% endfor %}
+            </div>
+            <form method="post" class="chat-input-bar" id="chatForm">
+                {{ form.hidden_tag() }}
+                <div id="emoji-panel" class="chat-panel chat-panel-emoji">
+                    {% for emoji in emojis %}
+                    <button type="button" data-emoji="{{ emoji }}">{{ emoji }}</button>
+                    {% endfor %}
+                </div>
+                <div id="sticker-panel" class="chat-panel chat-panel-sticker">
+                    {% for code, filename in stickers.items() %}
+                    <button type="button" data-sticker="{{ code }}">
+                        <img src="{{ url_for('static', filename='stickers/' ~ filename) }}" alt="{{ code }}" width="36" height="36">
+                    </button>
+                    {% endfor %}
+                </div>
+                <div class="chat-input-shell">
+                    <button type="button" id="emoji-toggle" class="chat-icon-btn">😊</button>
+                    <button type="button" id="sticker-toggle" class="chat-icon-btn">🖼</button>
+                    <textarea id="chat-textarea" name="content" rows="1" placeholder="Type your message..."></textarea>
+                    <button class="chat-send-btn" type="submit">Send</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+{{ super() }}
+<script>
+const chatHistory = document.getElementById('chatHistory');
+if (chatHistory) {
+    chatHistory.scrollTop = chatHistory.scrollHeight;
+}
+const textarea = document.getElementById('chat-textarea');
+const chatForm = document.getElementById('chatForm');
+const emojiToggle = document.getElementById('emoji-toggle');
+const stickerToggle = document.getElementById('sticker-toggle');
+const emojiPanel = document.getElementById('emoji-panel');
+const stickerPanel = document.getElementById('sticker-panel');
+
+emojiToggle.onclick = () => {
+    emojiPanel.style.display = emojiPanel.style.display === 'flex' ? 'none' : 'flex';
+    stickerPanel.style.display = 'none';
+};
+
+stickerToggle.onclick = () => {
+    stickerPanel.style.display = stickerPanel.style.display === 'flex' ? 'none' : 'flex';
+    emojiPanel.style.display = 'none';
+};
+
+emojiPanel.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+        textarea.value = (textarea.value || '') + btn.dataset.emoji;
+        textarea.focus();
+    });
+});
+
+stickerPanel.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+        textarea.value = btn.dataset.sticker;
+        chatForm.submit();
+    });
+});
+</script>
+{% endblock %}

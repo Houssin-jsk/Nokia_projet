@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard | Nokia Failure Lab{% endblock %}
+{% block content %}
+<div class="row g-4 dashboard-grid mb-4">
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card app-card glass-panel h-100 p-4">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="mb-0">Your Character</h5>
+                <span class="badge bg-primary-subtle text-primary">{{ current_user.role.code if current_user.role else 'Pending' }}</span>
+            </div>
+            {% if current_user.role %}
+                <div class="mb-2">
+                    <p class="text-uppercase text-muted small mb-1">Angle</p>
+                    <p class="fw-semibold mb-2">{{ current_user.role.angle }}</p>
+                    <h4 class="fw-bold">{{ current_user.role.title }}</h4>
+                </div>
+                <p><span class="fw-semibold">Key message:</span> {{ current_user.role.key_message }}</p>
+                <ul class="list-unstyled character-bullets">
+                    {% for bullet in current_user.role.bullet_points.split('\n') %}
+                    <li class="d-flex align-items-start"><span class="bullet-dot me-2">●</span><span>{{ bullet }}</span></li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-muted">No role assigned yet. Please contact the admin.</p>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card app-card glass-panel h-100 p-4">
+            <h5 class="mb-3">Your Progress</h5>
+            <div class="mb-2 text-muted">Step {{ current_user.progress_step }} of 5 – {{ current_user.progress_label }}</div>
+            <div class="progress mb-4">
+                <div class="progress-bar" role="progressbar" style="width: {{ (current_user.progress_step / 5) * 100 if current_user.progress_step else 0 }}%"></div>
+            </div>
+            <form method="post">
+                {{ progress_form.hidden_tag() }}
+                <div class="mb-3">
+                    {{ progress_form.progress_step.label(class_='form-label') }}
+                    {{ progress_form.progress_step(class_='form-select') }}
+                </div>
+                <button class="btn btn-success w-100" type="submit">Update progress</button>
+            </form>
+        </div>
+    </div>
+    <div class="col-12 col-lg-4">
+        <div class="card app-card glass-panel h-100 p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3 small-label">
+                <h5 class="mb-0">Team Overview</h5>
+                <span class="small">{{ student_count }} students</span>
+            </div>
+            <div class="team-overview-list">
+                {% for member in team_rows %}
+                <div class="team-row {% if member.id == current_user.id %}me{% endif %}">
+                    <div class="team-cell avatar"><div class="avatar-circle">{{ member.initials }}</div></div>
+                    <div class="team-cell name" title="{{ member.full_name }}">{{ member.full_name }}</div>
+                    <div class="team-cell role" title="{{ member.role_progress }}">{{ member.role_progress }}</div>
+                    <div class="team-cell status">
+                        <span class="status-dot {{ 'online' if member.is_online else 'offline' }}"></span>
+                        <span>{{ 'Online' if member.is_online else 'Offline' }}</span>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-muted small">No students yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row g-4 mt-1 charts-row mb-4">
+    <div class="col-12 col-md-6">
+        <div class="card app-card glass-panel p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-2 small-label">
+                <h5 class="mb-0">Team Progress Overview</h5>
+                <small>Live steps</small>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="progressChart"></canvas>
+            </div>
+            <p class="chart-caption">Distribution of all student progress steps (excluding admin).</p>
+        </div>
+    </div>
+    <div class="col-12 col-md-6">
+        <div class="card app-card glass-panel p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-2 small-label">
+                <h5 class="mb-0">Characters Assigned</h5>
+                <small>Role coverage</small>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="assignmentChart"></canvas>
+            </div>
+            <p class="chart-caption">How many teammates already have a Nokia character.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+{{ super() }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const progressLabels = {{ progress_labels|tojson }};
+const progressValues = {{ progress_values|tojson }};
+const assignmentData = {
+    labels: ["Characters assigned", "Not assigned yet"],
+    values: [{{ assigned_count }}, {{ unassigned_count }}]
+};
+
+const progressCtx = document.getElementById('progressChart');
+const assignmentCtx = document.getElementById('assignmentChart');
+const axisColor = '#e5e7eb';
+const gridColor = 'rgba(148, 163, 184, 0.25)';
+const labelColor = '#e5e7eb';
+const tooltipBg = 'rgba(15, 23, 42, 0.95)';
+const tooltipColor = '#e5e7eb';
+
+new Chart(progressCtx, {
+    type: 'bar',
+    data: {
+        labels: progressLabels,
+        datasets: [{
+            label: 'Team members',
+            data: progressValues,
+            backgroundColor: ['#22d3ee', '#38bdf8', '#818cf8', '#a855f7', '#22c55e', '#0ea5e9']
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: 'y',
+        scales: {
+            x: {
+                beginAtZero: true,
+                ticks: { precision:0, color: axisColor },
+                grid: { color: gridColor }
+            },
+            y: {
+                ticks: { font: { size: 12 }, color: axisColor },
+                grid: { color: gridColor }
+            }
+        },
+        plugins: {
+            legend: { display: false, labels: { color: labelColor } },
+            tooltip: {
+                backgroundColor: tooltipBg,
+                titleColor: tooltipColor,
+                bodyColor: tooltipColor
+            }
+        }
+    }
+});
+
+new Chart(assignmentCtx, {
+    type: 'doughnut',
+    data: {
+        labels: assignmentData.labels,
+        datasets: [{
+            data: assignmentData.values,
+            backgroundColor: ['#22d3ee', '#475569']
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { color: labelColor }
+                },
+            tooltip: {
+                backgroundColor: tooltipBg,
+                titleColor: tooltipColor,
+                bodyColor: tooltipColor
+            }
+        },
+        cutout: '65%'
+    }
+});
+</script>
+{% endblock %}

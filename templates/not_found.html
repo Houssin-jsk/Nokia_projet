@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block title %}Not Found | Nokia Failure Lab{% endblock %}
+{% block content %}
+<div class="text-center py-5">
+    <h2>🤔 Lost signal</h2>
+    <p>The page you looked for is not available.</p>
+    <a class="btn btn-primary" href="{{ url_for('dashboard') if current_user else url_for('login') }}">Back to safety</a>
+</div>
+{% endblock %}
